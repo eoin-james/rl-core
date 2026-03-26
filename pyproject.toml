@@ -1,13 +1,17 @@
 [project]
 name = "rl-core"
 version = "0.1.0"
-description = ""
+description = "Shared infrastructure for reinforcement learning research"
 authors = [
     {name = "eoinmcallister",email = "eoinmc.james@gmail.com"}
 ]
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "torch>=2.0",
+    "numpy>=1.26",
+    "pyyaml>=6.0",
+    "wandb>=0.15",
 ]
 
 
