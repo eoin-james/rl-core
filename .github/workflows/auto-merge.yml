@@ -1,0 +1,40 @@
+name: Auto-merge
+
+# When all CI checks pass on a PR, merge it automatically.
+# This only fires for PRs opened against main — direct pushes to main
+# are blocked by branch protection (see CONTRIBUTING.md).
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+jobs:
+  auto-merge:
+    name: Merge on CI pass
+    runs-on: ubuntu-latest
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request'
+    permissions:
+      pull-requests: write
+      contents: write
+    steps:
+      - name: Merge PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          # Find the PR associated with this workflow run
+          PR=$(gh api "repos/${{ github.repository }}/actions/runs/$RUN_ID" \
+            --jq '.pull_requests[0].number // empty')
+          if [ -z "$PR" ]; then
+            echo "No PR found for this run, skipping."
+            exit 0
+          fi
+          echo "Enabling auto-merge for PR #$PR"
+          gh pr merge "$PR" \
+            --repo "${{ github.repository }}" \
+            --squash \
+            --auto \
+            --delete-branch

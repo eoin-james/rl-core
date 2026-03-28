@@ -9,7 +9,31 @@ This document is for the maintainer of rl-core. It covers day-to-day development
 ```bash
 git clone https://github.com/eoin-james/rl-core.git
 cd rl-core
-poetry install  # installs main + dev deps (ruff, ty, pytest)
+poetry install --with dev  # installs main + dev deps (ruff, ty, pytest)
+```
+
+---
+
+## Branch protection (one-time GitHub setup)
+
+This must be configured once in GitHub settings. Go to **Settings → Branches → Add rule** for `main`:
+
+- [x] Require a pull request before merging
+- [x] Require status checks to pass before merging
+  - Add required checks: `Lint & Type Check`, `Tests`
+- [x] Require branches to be up to date before merging
+- [x] Do not allow bypassing the above settings
+
+This enforces the feature-branch workflow: nothing lands on `main` without CI passing. The `auto-merge.yml` workflow then merges PRs automatically once checks pass — no manual merge step needed for routine work.
+
+**Workflow for all changes:**
+
+```bash
+git checkout -b feat/my-feature   # never work directly on main
+# ... make changes, run /check to verify locally ...
+git push origin feat/my-feature
+gh pr create --fill                # open PR; CI triggers automatically
+# CI passes → auto-merge fires → branch deleted → done
 ```
 
 ---
