@@ -1,24 +1,46 @@
 # rl-core
 
-Shared infrastructure for reinforcement learning research. Provides reusable components — replay buffers, logging, config, checkpointing, and algorithm implementations — consumed by sibling projects to eliminate duplication and enforce consistent tooling.
+Shared infrastructure for reinforcement learning research. Provides reusable components — replay buffers, logging, config, checkpointing, algorithm implementations, and experiment lifecycle management — consumed by sibling projects to eliminate duplication and enforce consistent tooling.
+
+**Consuming repos:** `rl-evo-lab`, `lang-conditioned-control`
+
+---
 
 ## Modules
 
 | Module | Contents |
 |--------|----------|
 | `rl_core.buffers` | `ReplayBuffer` — generic field-spec circular buffer |
-| `rl_core.utils` | `seed_everything`, `get_device`, `load_config`, `Logger` backends, `save/load_checkpoint` |
+| `rl_core.utils` | `seed_everything`, `get_device`, `load_config`, `Logger` backends, `save/load_checkpoint`, `capture/restore_rng_state` |
 | `rl_core.nn` | `build_mlp`, `FlatParamsMixin` |
 | `rl_core.algorithms.dqn` | `QNetwork`, `DQNConfig`, `DQNTrainer` |
 | `rl_core.algorithms.sac` | `GaussianPolicy`, `TwinQNetwork`, `SACConfig`, `SACTrainer` |
+| `rl_core.experiments` | `RunManager`, `ExperimentRun`, `NamespacedLogger` |
+
+---
 
 ## Installation
 
-### In a sibling repo (local development)
+### Recommended: GitHub dependency (pinned to a release tag)
 
-Both `pyproject.toml` formats are supported.
+```toml
+# pyproject.toml in consuming repo
+[project]
+dependencies = [
+    "rl-core @ git+https://github.com/eoin-james/rl-core.git@v0.2.0",
+]
+```
 
-**PEP 621 (`[project]` table):**
+Pin to a specific tag so your repo is insulated from breaking changes on `main`. Upgrade deliberately when ready.
+
+```bash
+poetry install
+```
+
+### Local development (side-by-side checkout)
+
+If you have both repos cloned under the same parent directory:
+
 ```toml
 [project]
 dependencies = [
@@ -26,30 +48,11 @@ dependencies = [
 ]
 ```
 
-**Poetry group syntax:**
-```toml
-[tool.poetry.dependencies]
-rl-core = { path = "../rl-core", develop = true }
-```
-
-Then:
 ```bash
-poetry install  # or: pip install -e ../rl-core
+poetry install
 ```
 
-### From GitHub (CI / machines without a local clone)
-
-```toml
-[project]
-dependencies = [
-    "rl-core @ git+https://github.com/eoin-james/rl-core.git",
-]
-```
-
-Pin to a tag for reproducible installs:
-```toml
-"rl-core @ git+https://github.com/eoin-james/rl-core.git@v0.1.0"
-```
+---
 
 ## Usage
 
@@ -70,20 +73,6 @@ buffer.push(obs=obs, action=action, reward=reward, next_obs=next_obs, done=done)
 if buffer.ready(min_size=1000):
     batch = buffer.sample(256, device=device)
     # batch["obs"] → float32 Tensor, shape (256, 4)
-```
-
-### Logging
-
-```python
-from rl_core.utils.logging import CompositeLogger, CSVLogger, StdoutLogger, WandbLogger
-
-logger = CompositeLogger(
-    StdoutLogger(),
-    CSVLogger("runs/my_run/metrics.csv"),
-    WandbLogger(project="my-project", name="run-1", config=cfg_dict),
-)
-logger.log({"loss/q": 0.04, "reward": 120.3}, step=1000)
-logger.close()
 ```
 
 ### Config
@@ -110,7 +99,7 @@ cfg = DQNConfig(obs_dim=4, action_dim=2)
 trainer = DQNTrainer(cfg, device=device)
 
 action = trainer.select_action(obs, epsilon=0.1)
-metrics = trainer.train_step(batch)   # returns {"loss/q": ..., "q/mean": ...}
+metrics = trainer.train_step(batch)  # {"loss/q": ..., "q/mean": ...}
 ```
 
 ### SAC
@@ -121,24 +110,141 @@ from rl_core.algorithms.sac import SACConfig, SACTrainer
 cfg = SACConfig(obs_dim=8, action_dim=2)
 trainer = SACTrainer(cfg, device=device)
 
-action = trainer.select_action(obs)                    # stochastic
+action = trainer.select_action(obs)                      # stochastic
 action = trainer.select_action(obs, deterministic=True)  # eval
-metrics = trainer.train_step(batch)  # returns loss/critic, loss/actor, alpha, entropy
+metrics = trainer.train_step(batch)  # {"loss/critic": ..., "loss/actor": ..., "alpha": ..., "entropy": ...}
 ```
 
-### Checkpointing
+### Logging
 
 ```python
-from rl_core.utils import save_checkpoint, load_checkpoint, Checkpoint
+from rl_core.utils.logging import CompositeLogger, CSVLogger, StdoutLogger, WandbLogger
+
+logger = CompositeLogger(
+    StdoutLogger(),
+    CSVLogger("runs/my_run/metrics.csv"),
+    WandbLogger(project="my-project", name="run-1", config=cfg_dict),
+)
+logger.log({"loss/q": 0.04, "reward": 120.3}, step=1000)
+logger.close()
+```
+
+### Experiment management
+
+`RunManager` handles the boilerplate that every training script needs: deterministic run IDs, status tracking, idempotency, and checkpoint/resume with full RNG state.
+
+`NamespacedLogger` separates base-algorithm health metrics (`algo/`) from research-specific signal (`research/`), so you can always tell whether the underlying algorithm is stable independently of whether your research contribution is working.
+
+```python
+from pathlib import Path
+from rl_core.experiments import RunManager, NamespacedLogger
+from rl_core.utils.logging import CompositeLogger, CSVLogger, WandbLogger
+from rl_core.utils.config import config_to_dict
+from rl_core.utils import seed_everything
+
+cfg = MyConfig(env_id="CartPole-v1", seed=42, total_steps=500_000)
+seed_everything(cfg.seed)
+
+logger = NamespacedLogger(
+    CompositeLogger(
+        CSVLogger(f"runs/{cfg.env_id}/metrics.csv"),
+        WandbLogger(project="my-project", config=config_to_dict(cfg)),
+    ),
+    algo_keys={"loss/q", "q/mean"},           # logged as algo/loss/q, algo/q/mean
+    research_keys={"idn_loss", "eff_beta"},   # logged as research/idn_loss, ...
+)
+
+manager = RunManager(
+    config=cfg,
+    results_dir=Path("runs/"),
+    logger=logger,
+    run_id_prefix=f"{cfg.env_id}__seed{cfg.seed}",
+)
+
+if manager.is_done():
+    print(f"Run {manager.run_id} already complete, skipping.")
+    return
+
+with manager.run() as run:
+    start_step, ckpt = run.resume()   # finds latest checkpoint, restores RNG
+    if ckpt:
+        trainer.load_state_dicts(ckpt.state_dicts)
+
+    for step in range(start_step, cfg.total_steps):
+        batch = buffer.sample(cfg.batch_size, device)
+        metrics = trainer.train_step(batch)
+        run.log(step=step, metrics=metrics)
+
+        if step % 50_000 == 0:
+            run.checkpoint(step=step, state_dicts=trainer.state_dicts())
+```
+
+**What `RunManager` does automatically:**
+- Derives a SHA-1 run ID from the config — same config always maps to the same directory
+- Refuses to re-run a completed experiment (`is_done()`) unless `force=True`
+- Writes `status.json` (`running` → `completed` / `interrupted` / `failed`) so you can check state without opening TensorBoard
+- Saves a frozen `config.json` on first entry for human reference
+- Captures numpy + torch RNG state in every checkpoint so resumed runs are numerically identical
+
+**Run directory layout:**
+```
+runs/
+  CartPole-v1__seed42__59274889/
+    config.json          ← frozen config at run start
+    status.json          ← current state: running | completed | interrupted | failed
+    checkpoints/
+      ckpt_00000000.pt
+      ckpt_00050000.pt
+      ckpt_00100000.pt
+```
+
+### Checkpointing (standalone)
+
+For use without `RunManager`:
+
+```python
+from rl_core.utils import save_checkpoint, load_checkpoint, Checkpoint, capture_rng_state
 
 save_checkpoint(
-    Checkpoint(step=1000, state_dicts=trainer.state_dicts(), metrics={"reward": 200.0}),
+    Checkpoint(
+        step=1000,
+        state_dicts=trainer.state_dicts(),
+        metrics={"reward": 200.0},
+        rng_state=capture_rng_state(),
+    ),
     path="checkpoints/step_1000.pt",
 )
 
 ckpt = load_checkpoint("checkpoints/step_1000.pt", map_location=device)
 trainer.load_state_dicts(ckpt.state_dicts)
 ```
+
+---
+
+## Versioning
+
+This repo uses [semantic versioning](https://semver.org) with git tags.
+
+| Bump | When |
+|------|------|
+| `patch` (0.1.**x**) | Bug fix, no API change |
+| `minor` (0.**x**.0) | New feature, backwards compatible |
+| `major` (**x**.0.0) | Breaking change — renamed, removed, or changed signature |
+
+**Consuming repos should always pin to a tag.** Breaking changes will never land silently — they require a major version bump and are documented in [CHANGELOG.md](CHANGELOG.md).
+
+---
+
+## Requesting changes
+
+Use [GitHub Issues](https://github.com/eoin-james/rl-core/issues) with the provided templates:
+
+- **Change request** — use this if you need a new feature, a behaviour change, or something in rl-core is blocking your work. Specify which repo is affected and whether the change would be breaking for you.
+- **Bug report** — for incorrect behaviour.
+
+Any PR that changes a public API must be labelled `breaking` and must list which downstream repos are affected. Downstream maintainers are expected to test the upgrade before merging in their own repos.
+
+---
 
 ## Tooling
 
@@ -148,6 +254,8 @@ poetry run ruff format .      # format
 poetry run ty check           # type check
 poetry run pytest tests/ -v   # tests
 ```
+
+---
 
 ## License
 
