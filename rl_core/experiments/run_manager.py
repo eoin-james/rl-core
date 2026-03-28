@@ -60,11 +60,12 @@ Typical usage::
 from __future__ import annotations
 
 import json
+from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import fields as dataclass_fields
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Generator
+from typing import Any
 
 from rl_core.utils.checkpoint import (
     Checkpoint,
@@ -257,10 +258,7 @@ class RunManager:
         ``force=False``.
         """
         if self.is_done() and not self._force:
-            raise RuntimeError(
-                f"Run '{self._run_id}' is already completed. "
-                "Pass force=True to RunManager to re-run."
-            )
+            raise RuntimeError(f"Run '{self._run_id}' is already completed. Pass force=True to RunManager to re-run.")
 
         self.run_dir.mkdir(parents=True, exist_ok=True)
         self.checkpoints_dir.mkdir(parents=True, exist_ok=True)
@@ -268,9 +266,7 @@ class RunManager:
         # Persist config once (human reference, not used by code).
         config_path = self.run_dir / "config.json"
         if not config_path.exists():
-            config_path.write_text(
-                json.dumps(_config_to_json(self._config), indent=2, default=str)
-            )
+            config_path.write_text(json.dumps(_config_to_json(self._config), indent=2, default=str))
 
         exp_run = ExperimentRun(self)
         self._write_status(step=0, status="running")
@@ -297,7 +293,7 @@ class RunManager:
             "run_id": self._run_id,
             "status": status,
             "step": step,
-            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(UTC).isoformat(),
         }
         (self.run_dir / "status.json").write_text(json.dumps(data, indent=2))
 

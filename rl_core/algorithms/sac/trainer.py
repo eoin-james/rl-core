@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import copy
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 import torch
@@ -18,6 +19,8 @@ from rl_core.algorithms.sac.network import GaussianPolicy, TwinQNetwork
 
 @dataclass(frozen=True)
 class SACConfig:
+    """Frozen configuration for SACTrainer."""
+
     obs_dim: int
     action_dim: int
     hidden_dims: tuple[int, ...] = (256, 256)
@@ -66,9 +69,7 @@ class SACTrainer:
         self.critic_target.eval()
 
         self.target_entropy: float = (
-            config.target_entropy
-            if config.target_entropy is not None
-            else -float(config.action_dim)
+            config.target_entropy if config.target_entropy is not None else -float(config.action_dim)
         )
         self.log_alpha = torch.zeros(1, requires_grad=True, device=device)
 
@@ -78,6 +79,7 @@ class SACTrainer:
 
     @property
     def alpha(self) -> Tensor:
+        """Current entropy temperature (exp of the learnable log_alpha)."""
         return self.log_alpha.exp()
 
     def select_action(self, obs: np.ndarray, deterministic: bool = False) -> np.ndarray:
@@ -110,9 +112,7 @@ class SACTrainer:
         with torch.no_grad():
             next_action, next_log_prob = self.actor.sample(next_obs)
             next_q = self.critic_target.min_q(next_obs, next_action)
-            target_q = reward + (1.0 - done) * self.config.gamma * (
-                next_q - self.alpha.detach() * next_log_prob
-            )
+            target_q = reward + (1.0 - done) * self.config.gamma * (next_q - self.alpha.detach() * next_log_prob)
 
         q1, q2 = self.critic(obs, action)
         critic_loss = F.mse_loss(q1, target_q) + F.mse_loss(q2, target_q)
@@ -152,7 +152,8 @@ class SACTrainer:
         for p, tp in zip(self.critic.parameters(), self.critic_target.parameters(), strict=True):
             tp.data.copy_(tau * p.data + (1.0 - tau) * tp.data)
 
-    def state_dicts(self) -> dict[str, dict]:
+    def state_dicts(self) -> dict[str, Any]:
+        """Return state dicts for all networks, optimizers, and log_alpha."""
         return {
             "actor": self.actor.state_dict(),
             "critic": self.critic.state_dict(),
@@ -162,7 +163,8 @@ class SACTrainer:
             "log_alpha": self.log_alpha.detach().cpu(),
         }
 
-    def load_state_dicts(self, state_dicts: dict[str, dict]) -> None:
+    def load_state_dicts(self, state_dicts: dict[str, Any]) -> None:
+        """Restore all networks, optimizers, and log_alpha from *state_dicts*."""
         self.actor.load_state_dict(state_dicts["actor"])
         self.critic.load_state_dict(state_dicts["critic"])
         self.critic_target.load_state_dict(state_dicts["critic_target"])

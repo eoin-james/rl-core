@@ -34,4 +34,4 @@ Quick-start::
 from rl_core.experiments.metrics import NamespacedLogger
 from rl_core.experiments.run_manager import ExperimentRun, RunManager
 
-__all__ = ["RunManager", "ExperimentRun", "NamespacedLogger"]
+__all__ = ["ExperimentRun", "NamespacedLogger", "RunManager"]

@@ -48,13 +48,10 @@ class ReplayBuffer:
     def sample(self, batch_size: int, device: torch.device) -> dict[str, Tensor]:
         """Sample a random batch. Returns ``float32`` tensors on ``device``."""
         if batch_size > self._size:
-            raise ValueError(
-                f"Requested batch of {batch_size} but buffer only contains {self._size} transitions."  # noqa: E501
-            )
+            raise ValueError(f"Requested batch of {batch_size} but buffer only contains {self._size} transitions.")
         indices = np.random.randint(0, self._size, size=batch_size)
         return {
-            name: torch.as_tensor(arr[indices], dtype=torch.float32, device=device)
-            for name, arr in self._data.items()
+            name: torch.as_tensor(arr[indices], dtype=torch.float32, device=device) for name, arr in self._data.items()
         }
 
     def ready(self, min_size: int) -> bool:
@@ -62,8 +59,10 @@ class ReplayBuffer:
         return self._size >= min_size
 
     def __len__(self) -> int:
+        """Return the number of transitions currently stored."""
         return self._size
 
     @property
     def capacity(self) -> int:
+        """Maximum number of transitions the buffer can hold."""
         return self._capacity

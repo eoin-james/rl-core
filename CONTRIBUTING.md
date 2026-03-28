@@ -14,17 +14,9 @@ poetry install --with dev  # installs main + dev deps (ruff, ty, pytest)
 
 ---
 
-## Branch protection (one-time GitHub setup)
+## Feature branch workflow
 
-This must be configured once in GitHub settings. Go to **Settings → Branches → Add rule** for `main`:
-
-- [x] Require a pull request before merging
-- [x] Require status checks to pass before merging
-  - Add required checks: `Lint & Type Check`, `Tests`
-- [x] Require branches to be up to date before merging
-- [x] Do not allow bypassing the above settings
-
-This enforces the feature-branch workflow: nothing lands on `main` without CI passing. The `auto-merge.yml` workflow then merges PRs automatically once checks pass — no manual merge step needed for routine work.
+Branch protection is enabled on `main` (PRs required, both CI jobs must pass, branch must be up to date). The `auto-merge.yml` workflow merges and deletes the branch automatically once CI passes.
 
 **Workflow for all changes:**
 
