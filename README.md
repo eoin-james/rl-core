@@ -235,14 +235,42 @@ This repo uses [semantic versioning](https://semver.org) with git tags.
 
 ---
 
-## Requesting changes
+## For consuming repos
 
-Use [GitHub Issues](https://github.com/eoin-james/rl-core/issues) with the provided templates:
+### How to request a change
 
-- **Change request** — use this if you need a new feature, a behaviour change, or something in rl-core is blocking your work. Specify which repo is affected and whether the change would be breaking for you.
-- **Bug report** — for incorrect behaviour.
+1. Open a [GitHub Issue](https://github.com/eoin-james/rl-core/issues) using one of the templates:
+   - **Change request** — you need something new, or existing behaviour is blocking you
+   - **Bug report** — something is behaving incorrectly
 
-Any PR that changes a public API must be labelled `breaking` and must list which downstream repos are affected. Downstream maintainers are expected to test the upgrade before merging in their own repos.
+2. The maintainer will triage and reply with one of:
+   - **Will do** — implementation is planned; issue stays open until the release is tagged
+   - **Won't do** — not appropriate for a shared library; issue closed with a reason
+   - **Needs discussion** — scope or API design needs agreement before work starts
+
+3. Once a release is tagged, the issue is closed and the version appears in [CHANGELOG.md](CHANGELOG.md).
+
+### How to upgrade your pin
+
+When a new release is tagged:
+
+```toml
+# pyproject.toml — bump the tag
+"rl-core @ git+https://github.com/eoin-james/rl-core.git@v0.3.0"
+```
+
+```bash
+poetry update rl-core
+```
+
+Check [CHANGELOG.md](CHANGELOG.md) for what changed. If the release is a **major version bump**, read the migration notes before upgrading — something you import will have changed.
+
+### What to expect from breaking changes
+
+Breaking changes will never land silently. A major version bump means:
+- The CHANGELOG has a migration note describing exactly what changed and how to update
+- The PR was labelled `breaking` and lists affected repos
+- You have time to upgrade on your own schedule — your pinned version keeps working until you move it
 
 ---
 
