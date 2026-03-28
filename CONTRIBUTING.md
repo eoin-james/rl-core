@@ -7,7 +7,7 @@ This document is for the maintainer of rl-core. It covers day-to-day development
 ## Setup
 
 ```bash
-git clone https://github.com/eoin-james/rl-core.git
+git clone https://github.com/graylayer-labs/rl-core.git
 cd rl-core
 poetry install --with dev  # installs main + dev deps (ruff, ty, pytest)
 ```

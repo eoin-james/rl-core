@@ -27,7 +27,7 @@ Shared infrastructure for reinforcement learning research. Provides reusable com
 # pyproject.toml in consuming repo
 [project]
 dependencies = [
-    "rl-core @ git+https://github.com/eoin-james/rl-core.git@v0.2.0",
+    "rl-core @ git+https://github.com/graylayer-labs/rl-core.git@v1.0.0",
 ]
 ```
 
@@ -239,7 +239,7 @@ This repo uses [semantic versioning](https://semver.org) with git tags.
 
 ### How to request a change
 
-1. Open a [GitHub Issue](https://github.com/eoin-james/rl-core/issues) using one of the templates:
+1. Open a [GitHub Issue](https://github.com/graylayer-labs/rl-core/issues) using one of the templates:
    - **Change request** — you need something new, or existing behaviour is blocking you
    - **Bug report** — something is behaving incorrectly
 
@@ -256,7 +256,7 @@ When a new release is tagged:
 
 ```toml
 # pyproject.toml — bump the tag
-"rl-core @ git+https://github.com/eoin-james/rl-core.git@v0.3.0"
+"rl-core @ git+https://github.com/graylayer-labs/rl-core.git@v0.3.0"
 ```
 
 ```bash
