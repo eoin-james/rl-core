@@ -7,6 +7,24 @@ A `breaking` label on the GitHub PR signals a major version bump.
 
 ---
 
+## [v1.0.0] - 2026-03-28
+
+First stable release. Public API is now considered settled.
+
+### Added
+- Branch protection on `main`, PR-required workflow, auto-merge on CI pass
+- PR template and GitHub issue templates (change request, bug report)
+- `CONTRIBUTING.md` — release process, breaking change protocol, new algorithm checklist
+- `CLAUDE.md` — versioning rules, consumer repo context, release process, what not to do
+- `.claude/commands/release.md` and `check.md` slash commands
+- `ruff.toml` and `ty.toml` — expanded ruleset (D, ANN, PTH, C4, PERF, RUF), Google docstring convention
+
+### Fixed
+- CI now installs dev dependencies (`--with dev`) so ruff, ty, pytest are available
+- `test` job depends on `quality` — fails fast on lint errors
+
+---
+
 ## [v0.2.0] - 2026-03-28
 
 ### Added

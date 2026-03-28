@@ -1,6 +1,6 @@
 [project]
 name = "rl-core"
-version = "0.1.0"
+version = "1.0.0"
 description = "Shared infrastructure for reinforcement learning research"
 authors = [
     {name = "eoinmcallister",email = "eoinmc.james@gmail.com"}
