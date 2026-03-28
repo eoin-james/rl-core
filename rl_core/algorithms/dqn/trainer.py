@@ -16,6 +16,8 @@ from rl_core.algorithms.dqn.network import QNetwork
 
 @dataclass(frozen=True)
 class DQNConfig:
+    """Frozen configuration for DQNTrainer."""
+
     obs_dim: int
     action_dim: int
     hidden_dims: tuple[int, ...] = (256, 256)
@@ -107,6 +109,7 @@ class DQNTrainer:
             tp.data.copy_(tau * p.data + (1.0 - tau) * tp.data)
 
     def state_dicts(self) -> dict[str, dict]:
+        """Return state dicts for the Q-network and target network."""
         return {
             "q_network": self.q_network.state_dict(),
             "target_network": self.target_network.state_dict(),
@@ -114,6 +117,7 @@ class DQNTrainer:
         }
 
     def load_state_dicts(self, state_dicts: dict[str, dict]) -> None:
+        """Restore Q-network and target network from *state_dicts*."""
         self.q_network.load_state_dict(state_dicts["q_network"])
         self.target_network.load_state_dict(state_dicts["target_network"])
         self.optimizer.load_state_dict(state_dicts["optimizer"])

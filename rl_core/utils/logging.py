@@ -29,18 +29,25 @@ from typing import Any, Protocol, runtime_checkable
 class Logger(Protocol):
     """Minimal protocol all loggers must satisfy."""
 
-    def log(self, metrics: dict[str, float], step: int) -> None: ...
-    def close(self) -> None: ...
+    def log(self, metrics: dict[str, float], step: int) -> None:
+        """Emit *metrics* at *step*."""
+        ...
+
+    def close(self) -> None:
+        """Flush and release any resources."""
+        ...
 
 
 class StdoutLogger:
     """Prints metrics to stdout."""
 
     def log(self, metrics: dict[str, float], step: int) -> None:
+        """Print *metrics* to stdout."""
         parts = "  ".join(f"{k}={v:.4g}" for k, v in metrics.items())
         print(f"step={step}  {parts}", file=sys.stdout, flush=True)
 
     def close(self) -> None:
+        """No-op; stdout needs no cleanup."""
         pass
 
 
@@ -58,6 +65,7 @@ class CSVLogger:
         self._needs_header = self._path.stat().st_size == 0
 
     def log(self, metrics: dict[str, float], step: int) -> None:
+        """Append *metrics* as a CSV row."""
         row = {"step": step, **metrics}
         if self._writer is None:
             self._writer = csv.DictWriter(self._file, fieldnames=list(row.keys()))
@@ -67,6 +75,7 @@ class CSVLogger:
         self._file.flush()
 
     def close(self) -> None:
+        """Flush and close the underlying CSV file."""
         self._file.close()
 
 
@@ -89,9 +98,7 @@ class WandbLogger:
         try:
             import wandb
         except ImportError as exc:
-            raise ImportError(
-                "wandb is required for WandbLogger. Install with: pip install wandb"
-            ) from exc
+            raise ImportError("wandb is required for WandbLogger. Install with: pip install wandb") from exc
 
         self._wandb = wandb
         wandb.init(
@@ -104,9 +111,11 @@ class WandbLogger:
         )
 
     def log(self, metrics: dict[str, float], step: int) -> None:
+        """Forward *metrics* to the active wandb run."""
         self._wandb.log(metrics, step=step)
 
     def close(self) -> None:
+        """Finish the wandb run."""
         self._wandb.finish()
 
 
@@ -117,10 +126,12 @@ class CompositeLogger:
         self._loggers = list(loggers)
 
     def log(self, metrics: dict[str, float], step: int) -> None:
+        """Forward *metrics* to every backend."""
         for logger in self._loggers:
             logger.log(metrics, step)
 
     def close(self) -> None:
+        """Close every backend."""
         for logger in self._loggers:
             logger.close()
 

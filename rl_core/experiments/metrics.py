@@ -59,11 +59,10 @@ class NamespacedLogger:
         self._research = set(research_keys or [])
         overlap = self._algo & self._research
         if overlap:
-            raise ValueError(
-                f"Keys appear in both algo_keys and research_keys: {overlap}"
-            )
+            raise ValueError(f"Keys appear in both algo_keys and research_keys: {overlap}")
 
     def log(self, metrics: dict[str, float], step: int) -> None:
+        """Route *metrics* to algo/ or research/ prefixes then forward to the inner logger."""
         routed: dict[str, float] = {}
         for k, v in metrics.items():
             if k in self._algo:
@@ -75,4 +74,5 @@ class NamespacedLogger:
         self._logger.log(routed, step)
 
     def close(self) -> None:
+        """Close the inner logger."""
         self._logger.close()
