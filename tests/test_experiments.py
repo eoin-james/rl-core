@@ -21,7 +21,6 @@ from rl_core.utils.checkpoint import (
 )
 from rl_core.utils.logging import StdoutLogger
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -188,9 +187,8 @@ def test_run_manager_status_completed(tmp_path: Path) -> None:
 def test_run_manager_status_interrupted(tmp_path: Path) -> None:
     cfg = _Cfg()
     manager = RunManager(cfg, results_dir=tmp_path, logger=_CapturingLogger())
-    with pytest.raises(KeyboardInterrupt):
-        with manager.run():
-            raise KeyboardInterrupt
+    with pytest.raises(KeyboardInterrupt), manager.run():
+        raise KeyboardInterrupt
     status = json.loads((manager.run_dir / "status.json").read_text())
     assert status["status"] == "interrupted"
     assert not manager.is_done()
@@ -199,9 +197,8 @@ def test_run_manager_status_interrupted(tmp_path: Path) -> None:
 def test_run_manager_status_failed(tmp_path: Path) -> None:
     cfg = _Cfg()
     manager = RunManager(cfg, results_dir=tmp_path, logger=_CapturingLogger())
-    with pytest.raises(RuntimeError):
-        with manager.run():
-            raise RuntimeError("boom")
+    with pytest.raises(RuntimeError), manager.run():
+        raise RuntimeError("boom")
     status = json.loads((manager.run_dir / "status.json").read_text())
     assert status["status"] == "failed"
 
@@ -225,9 +222,9 @@ def test_run_manager_is_done_blocks_rerun(tmp_path: Path) -> None:
     with manager.run():
         pass
     assert manager.is_done()
-    with pytest.raises(RuntimeError, match="already completed"):
-        with RunManager(cfg, results_dir=tmp_path, logger=_CapturingLogger()).run():
-            pass
+    blocked = RunManager(cfg, results_dir=tmp_path, logger=_CapturingLogger())
+    with pytest.raises(RuntimeError, match="already completed"), blocked.run():
+        pass
 
 
 def test_run_manager_force_overwrites_completed(tmp_path: Path) -> None:

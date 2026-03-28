@@ -60,11 +60,12 @@ Typical usage::
 from __future__ import annotations
 
 import json
+from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import fields as dataclass_fields
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Generator
+from typing import Any
 
 from rl_core.utils.checkpoint import (
     Checkpoint,
@@ -297,7 +298,7 @@ class RunManager:
             "run_id": self._run_id,
             "status": status,
             "step": step,
-            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(UTC).isoformat(),
         }
         (self.run_dir / "status.json").write_text(json.dumps(data, indent=2))
 
