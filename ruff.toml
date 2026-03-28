@@ -1,0 +1,42 @@
+line-length = 120
+target-version = "py312"
+
+[lint]
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # pyflakes
+    "I",     # isort
+    "UP",    # pyupgrade
+    "B",     # flake8-bugbear
+    "SIM",   # flake8-simplify
+    "C4",    # flake8-comprehensions
+    "PTH",   # flake8-use-pathlib
+    "RUF",   # ruff-specific rules
+    "PERF",  # perflint (performance anti-patterns)
+    "PLE",   # pylint errors
+    "PLW",   # pylint warnings
+    "D",     # pydocstyle (Google convention — see [lint.pydocstyle])
+    "ANN",   # flake8-annotations (type annotations)
+]
+ignore = [
+    "PLW2901",  # redefined-loop-name — common and intentional in RL training loops
+    "RUF002",   # ambiguous-unicode-character-docstring — Greek letters (α, β, γ) are intentional
+    "RUF003",   # ambiguous-unicode-character-comment — same
+    "ANN204",   # missing return type annotation for __init__ — always None
+    "ANN401",   # dynamically typed Any — legitimately used for config coercion and **wandb_kwargs
+    "D107",     # missing docstring in __init__ — Google style puts args in the class docstring
+]
+
+[lint.pydocstyle]
+convention = "google"
+
+[lint.per-file-ignores]
+"tests/**/*.py" = ["ANN", "D"]  # no annotation or docstring requirements in tests
+
+[lint.isort]
+known-first-party = ["rl_core"]
+
+[format]
+quote-style = "double"
+indent-style = "space"
