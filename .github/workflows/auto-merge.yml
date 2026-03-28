@@ -32,9 +32,8 @@ jobs:
             echo "No PR found for this run, skipping."
             exit 0
           fi
-          echo "Enabling auto-merge for PR #$PR"
+          echo "Merging PR #$PR"
           gh pr merge "$PR" \
             --repo "${{ github.repository }}" \
             --squash \
-            --auto \
             --delete-branch
