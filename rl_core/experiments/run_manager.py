@@ -269,9 +269,7 @@ class RunManager:
         # Persist config once (human reference, not used by code).
         config_path = self.run_dir / "config.json"
         if not config_path.exists():
-            config_path.write_text(
-                json.dumps(_config_to_json(self._config), indent=2, default=str)
-            )
+            config_path.write_text(json.dumps(_config_to_json(self._config), indent=2, default=str))
 
         exp_run = ExperimentRun(self)
         self._write_status(step=0, status="running")
