@@ -47,9 +47,9 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
-# Claude Code — never commit AI assistant config
-.claude/
-CLAUDE.md
+# Claude Code — commit project-level config, keep local settings private
+# CLAUDE.md and .claude/commands/ are project docs and should be committed
+.claude/settings.local.json
 
 # Experiment outputs (kept local)
 runs/
